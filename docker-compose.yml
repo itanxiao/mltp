@@ -35,7 +35,7 @@ services:
       - "3000:3000"
     environment:
       - GF_FEATURE_TOGGLES_ENABLE=flameGraph traceqlSearch traceQLStreaming correlations metricsSummary traceqlEditor traceToMetrics traceToProfiles datatrails
-      - GF_INSTALL_PLUGINS=grafana-lokiexplore-app
+      - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
 
