@@ -55,29 +55,6 @@ otelcol.exporter.otlp "tempo" {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// NEW: add Loki label hints for OTLP logs (generic)
-///////////////////////////////////////////////////////////////////////////////
-otelcol.processor.attributes "logs_loki_hints" {
-  // 对 logs 生效即可（attributes processor 支持 logs）
-  action {
-    key    = "loki.resource.labels"
-    action = "upsert"
-    // 把常用资源属性提升为 Loki labels，方便在 Grafana 里按 job/service 查
-    value  = "service.name,service.namespace,service.instance.id"
-  }
-
-  // 如果你希望把某些 log attributes 也提升为 labels，可按需加（可选）
-  // action {
-  //   key    = "loki.attribute.labels"
-  //   action = "upsert"
-  //   value  = "http.method,http.route,exception.type"
-  // }
-
-  output {
-    logs = [otelcol.processor.batch.default.input]
-  }
-}
 
 otelcol.receiver.otlp "otlp" {
   grpc {
@@ -88,8 +65,7 @@ otelcol.receiver.otlp "otlp" {
   }
 
   output {
-    // logs 先过 hints，再进 batch
-    logs    = [otelcol.processor.attributes.logs_loki_hints.input]
+    logs    = [otelcol.processor.batch.default.input]
     traces  = [otelcol.processor.batch.default.input]
     metrics = [otelcol.processor.batch.default.input]
   }
