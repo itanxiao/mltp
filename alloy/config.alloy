@@ -54,14 +54,18 @@ otelcol.exporter.otlp "tempo" {
     }
   }
 }
-
+otelcol.auth.bearer "creds" {
+  token = sys.env("OTELCOL_AUTH_BEARER_CREDS_TOKEN")
+}
 
 otelcol.receiver.otlp "otlp" {
   grpc {
     endpoint = "0.0.0.0:4317"
+    auth = otelcol.auth.bearer.creds.handler
   }
   http {
     endpoint = "0.0.0.0:4318"
+    auth = otelcol.auth.bearer.creds.handler
   }
 
   output {
