@@ -23,16 +23,16 @@ prometheus.remote_write "mimir" {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Loki write (for logs)
-loki.write "default" {
-  endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+//loki.write "default" {
+//  endpoint {
+//    json_path(local.file.endpoints.content, ".logs.url")[0]
 
     // basic_auth {
     //  username = json_path(local.file.endpoints.content, ".logs.basicAuth.username")[0]
     //  password = json_path(local.file.endpoints.content, ".logs.basicAuth.password")[0]
     // }
-  }
-}
+//  }
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tempo exporter auth + exporter (for traces)
@@ -85,15 +85,21 @@ otelcol.processor.batch "default" {
     // metrics -> prometheus exporter -> remote_write
     metrics = [otelcol.exporter.prometheus.otlp_metrics.input]
 
-    // logs -> loki exporter -> loki.write
-    logs = [otelcol.exporter.loki.default.input]
+    // logs -> loki exporter
+    logs = [otelcol.exporter.otlphttp.loki.input]
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // OTLP logs -> Loki
-otelcol.exporter.loki "default" {
-  forward_to = [loki.write.default.receiver]
+//otelcol.exporter.loki "default" {
+//  forward_to = [loki.write.default.receiver]
+//}
+
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = json_path(local.file.endpoints.content, ".logs.url")[0]
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
