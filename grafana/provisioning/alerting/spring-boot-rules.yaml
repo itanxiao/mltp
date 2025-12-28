@@ -1,0 +1,168 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: spring-boot-otlp-Mimir-global
+    folder: Spring Boot
+    interval: 1m
+    rules:
+
+      # ==================================================
+      # 1) 服务停止上报（OTLP push 模式替代 up）
+      # 逻辑：在最近 2 分钟内，process_uptime 没有任何样本 -> 认为服务/链路不可用
+      # ==================================================
+      - uid: spring_service_no_metrics
+        title: Spring Boot service stopped sending metrics
+        condition: C
+        for: 2m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "服务停止上报指标"
+          description: "service={{ $labels.service_name }} 在 2m 内没有上报 process_uptime（OTLP push 模式下用于替代 up）"
+        data:
+          - refId: A
+            datasourceUid: Mimir
+            model:
+              expr: |
+                sum by (service_name) (
+                  count_over_time(process_uptime{service_name!=""}[2m])
+                ) == 0
+              instant: false
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 2) HTTP 5xx 错误率（用 *_count 做请求计数）
+      # ==================================================
+      - uid: spring_http_5xx_rate_high
+        title: HTTP 5xx error rate high (OTLP/Mimir)
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: critical
+          category: error
+        annotations:
+          summary: "HTTP 5xx 错误率过高"
+          description: "service={{ $labels.service_name }} 5xx > 5% (5m)"
+        data:
+          - refId: A
+            datasourceUid: Mimir
+            model:
+              expr: |
+                (
+                  sum by (service_name) (
+                    rate(http_server_request_duration_count{
+                      service_name!="",
+                      http_response_status_code=~"5.."
+                    }[5m])
+                  )
+                )
+                /
+                (
+                  sum by (service_name) (
+                    rate(http_server_request_duration_count{
+                      service_name!=""
+                    }[5m])
+                  )
+                )
+              instant: false
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 3) HTTP p95 延迟（毫秒单位）
+      # 需要 http_server_request_duration_bucket（如果你没 bucket，我可以给你改成平均延迟告警）
+      # ==================================================
+      - uid: spring_http_latency_p95_high
+        title: HTTP latency p95 high (ms)
+        condition: C
+        for: 10m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+          category: latency
+        annotations:
+          summary: "HTTP 延迟 p95 偏高"
+          description: "service={{ $labels.service_name }} p95 > 500ms (10m)"
+        data:
+          - refId: A
+            datasourceUid: Mimir
+            model:
+              expr: |
+                histogram_quantile(
+                  0.95,
+                  sum by (service_name, le) (
+                    rate(http_server_request_duration_bucket{
+                      service_name!=""
+                    }[5m])
+                  )
+                )
+              instant: false
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [500] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 4) JVM Heap 使用率 > 85%
+      # ==================================================
+      - uid: spring_jvm_heap_high
+        title: JVM heap usage high
+        condition: C
+        for: 10m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+          category: jvm
+        annotations:
+          summary: "JVM Heap 使用率过高"
+          description: "service={{ $labels.service_name }} heap > 85% (10m)"
+        data:
+          - refId: A
+            datasourceUid: Mimir
+            model:
+              expr: |
+                sum by (service_name) (
+                  jvm_memory_used{service_name!="", area="heap"}
+                )
+                /
+                sum by (service_name) (
+                  jvm_memory_max{service_name!="", area="heap"}
+                )
+              instant: false
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.85] }
+                  reducer: { type: last }
+                  operator: { type: and }
