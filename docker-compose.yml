@@ -70,7 +70,7 @@ services:
       - 14250
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - tempo:/tempo
+      - tempo:/var/tempo
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
     logging:
       driver: "json-file"
