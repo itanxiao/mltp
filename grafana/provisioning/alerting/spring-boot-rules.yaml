@@ -60,7 +60,7 @@ groups:
         title: HTTP 5xx error rate high (OTLP/mimir)
         condition: C
         for: 5m
-        noDataState: NoData
+        noDataState: OK          # <- 原来 NoData，改为 OK，NoData 不再触发通知
         execErrState: Error
         labels:
           severity: critical
