@@ -4,7 +4,7 @@ groups:
   - orgId: 1
     name: "springboot错误日志"
     folder: "Spring Boot"
-    interval: 1m
+    interval: 30s
     rules:
       - uid: "spring_log_error_warn"
         title: "服务异常日志告警"
