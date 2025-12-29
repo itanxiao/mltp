@@ -70,7 +70,7 @@ services:
       - 14250
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - "tempo:/tempo"
+      - tempo:/tempo
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
     logging:
       driver: "json-file"
@@ -87,7 +87,7 @@ services:
     expose:
       - 3100
     volumes:
-      - "loki:/loki"
+      - loki:/loki
       - "./loki/loki.yaml:/etc/loki/loki.yaml"
     logging:
       driver: "json-file"
@@ -101,7 +101,7 @@ services:
     expose:
       - 9009
     volumes:
-      - "mimir:/mimir"
+      - mimir:/mimir
       - "./mimir/mimir.yaml:/etc/mimir.yaml"
     logging:
       driver: "json-file"
