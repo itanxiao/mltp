@@ -8,7 +8,7 @@ groups:
     rules:
       - uid: "spring_log_error_warn"
         title: "服务异常日志告警"
-        condition: A
+        condition: C
         data:
           - refId: A
             datasourceUid: "loki"
@@ -17,19 +17,32 @@ groups:
               to: 0
             model:
               expr: |
-                sum by (service_name, severity_text, exception_message, exception_type) (
-                  count_over_time({severity_text =~ "ERROR|WARN"} | exception_type =~ ".+" | telemetry_sdk_language = "java" [5m])
-                )
-              legendFormat: "{{service_name}} - {{severity_text}}"
-        
+                sum by (service_name, severity_text, exception_message, exception_type) ( count_over_time({severity_text =~ "ERROR|WARN"} | exception_type =~ ".+" | telemetry_sdk_language = "java" [5m]) )
+
+          - refId: B
+            datasourceUid: "__expr__"
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              expression: B
+              evaluator:
+                type: gt
+                params: [0]
+
         for: 1m
         annotations:
-          summary: "服务 {{ $labels.service_name }} 检测到 {{ $labels.severity_text }}"
+          summary: "服务 {{ $labels.service_name }} 检测到 {{ $labels.severity_text }}（近5分钟）"
           description: |
             服务名称: {{ $labels.service_name }}
             日志级别: {{ $labels.severity_text }}
             异常类型: {{ $labels.exception_type }}
             错误信息: {{ $labels.exception_message }}
-          
+            计数(最近值): {{ $values.B }}
+
         labels:
           severity: "警告"
