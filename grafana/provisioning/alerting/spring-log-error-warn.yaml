@@ -4,22 +4,22 @@ groups:
   - orgId: 1
     name: "springboot错误日志"
     folder: "Spring Boot"
-    interval: 20s     # 更快评估
+    interval: 20s     
 
     rules:
-      - uid: "spring_log_error_warn"
+      - uid: "spring_log_error"
         title: "服务异常日志告警"
         condition: C
 
         noDataState: OK
         execErrState: OK
         
-        keepFiringFor: 2m
+        keepFiringFor: 5m
         data:
           - refId: A
             datasourceUid: "loki"
             relativeTimeRange:
-              from: 120     # 只看近2分钟（给一点 buffer）
+              from: 120     # 只看近2分钟
               to: 0
             model:
               refId: A
@@ -28,9 +28,9 @@ groups:
               expr: |
                 sum by (service_name, severity_text, exception_message, exception_type) (
                   count_over_time(
-                    {severity_text=~"ERROR|WARN"}
+                    {severity_text=~"ERROR"}
                     | exception_type=~".+"
-                    [1m]
+                    [2m]
                   )
                 )
               maxDataPoints: 43200
@@ -42,7 +42,7 @@ groups:
               refId: B
               type: reduce
               expression: A
-              reducer: max        # 比 last 更不容易“等点”
+              reducer: max        
               settings:
                 mode: dropNN
 
@@ -64,4 +64,4 @@ groups:
                   operator:
                     type: and
 
-        for: 0s          # 立即触发（或改 10s 做一点防抖）
+        for: 0s
