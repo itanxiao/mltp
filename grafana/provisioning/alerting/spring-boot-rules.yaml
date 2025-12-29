@@ -12,7 +12,7 @@ groups:
       # 逻辑：在最近 2 分钟内，process_uptime 没有任何样本 -> 认为服务/链路不可用
       # ==================================================
       - uid: spring_service_no_metrics
-        title: Spring Boot service stopped sending metrics
+        title: Spring Boot 服务停止发送指标
         condition: C
         for: 2m
         noDataState: Alerting
@@ -21,7 +21,6 @@ groups:
           severity: 严重
           category: 可用性
         annotations:
-          summary: "服务停止上报指标"
           description: "应用名称={{ $labels.spring_application_name }} 在 2m 内没有上报metrics"
         data:
           - refId: A
@@ -57,7 +56,7 @@ groups:
       # 2) HTTP 5xx 错误率（用 *_count 做请求计数）
       # ==================================================
       - uid: spring_http_5xx_rate_high
-        title: HTTP 5xx error rate high
+        title: HTTP 5xx 错误率过高
         condition: C
         for: 5m
         noDataState: OK          # <- 原来 NoData，改为 OK，NoData 不再触发通知
@@ -66,7 +65,6 @@ groups:
           severity: 严重
           category: 错误
         annotations:
-          summary: "HTTP 5xx 错误率过高"
           description: "应用名称={{ $labels.spring_application_name }} 5xx > 5% (5m)"
         data:
           - refId: A
@@ -106,7 +104,7 @@ groups:
       # 需要 http_server_request_duration_bucket（如果你没 bucket，我可以给你改成平均延迟告警）
       # ==================================================
       - uid: spring_http_latency_p95_high
-        title: HTTP latency p95 high (ms)
+        title: HTTP 延迟 p95 偏高
         condition: C
         for: 10m
         noDataState: OK
@@ -115,7 +113,6 @@ groups:
           severity: 警告
           category: 延迟
         annotations:
-          summary: "HTTP 延迟 p95 偏高"
           description: "应用名称={{ $labels.spring_application_name }} p95 > 500ms (10m)"
         data:
           # A: 原始查询（time series）
@@ -157,7 +154,7 @@ groups:
       # 4) JVM Heap 使用率 > 85%
       # ==================================================
       - uid: spring_jvm_heap_high
-        title: JVM heap usage high
+        title: JVM Heap 使用率过高
         condition: C
         for: 10m
         noDataState: OK
@@ -166,7 +163,6 @@ groups:
           severity: 警告
           category: jvm
         annotations:
-          summary: "JVM Heap 使用率过高"
           description: "应用名称={{ $labels.spring_application_name }} heap > 85% (10m)"
         data:
           # A: 原始查询（time series）
