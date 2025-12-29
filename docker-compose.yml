@@ -101,7 +101,7 @@ services:
     expose:
       - 9009
     volumes:
-      - mimir:/mimir
+      - mimir:/data
       - "./mimir/mimir.yaml:/etc/mimir.yaml"
     logging:
       driver: "json-file"
