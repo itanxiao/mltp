@@ -2,7 +2,7 @@ apiVersion: 1
 
 groups:
   - orgId: 1
-    name: spring-boot-otlp-Mimir-global
+    name: spring-boot-otlp-mimir-global
     folder: Spring Boot
     interval: 1m
     rules:
@@ -25,7 +25,8 @@ groups:
           description: "service={{ $labels.service_name }} 在 2m 内没有上报 process_uptime（OTLP push 模式下用于替代 up）"
         data:
           - refId: A
-            datasourceUid: Mimir
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
                 sum by (service_name) (
@@ -46,7 +47,7 @@ groups:
       # 2) HTTP 5xx 错误率（用 *_count 做请求计数）
       # ==================================================
       - uid: spring_http_5xx_rate_high
-        title: HTTP 5xx error rate high (OTLP/Mimir)
+        title: HTTP 5xx error rate high (OTLP/mimir)
         condition: C
         for: 5m
         noDataState: NoData
@@ -59,7 +60,8 @@ groups:
           description: "service={{ $labels.service_name }} 5xx > 5% (5m)"
         data:
           - refId: A
-            datasourceUid: Mimir
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
                 (
@@ -106,8 +108,10 @@ groups:
           summary: "HTTP 延迟 p95 偏高"
           description: "service={{ $labels.service_name }} p95 > 500ms (10m)"
         data:
+          # A: 原始查询（time series）
           - refId: A
-            datasourceUid: Mimir
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
                 histogram_quantile(
@@ -119,11 +123,21 @@ groups:
                   )
                 )
               instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 service_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
           - refId: C
             datasourceUid: __expr__
             model:
               type: threshold
-              expression: A
+              expression: B
               conditions:
                 - evaluator: { type: gt, params: [500] }
                   reducer: { type: last }
@@ -146,7 +160,8 @@ groups:
           description: "service={{ $labels.service_name }} heap > 85% (10m)"
         data:
           - refId: A
-            datasourceUid: Mimir
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
                 sum by (service_name) (
