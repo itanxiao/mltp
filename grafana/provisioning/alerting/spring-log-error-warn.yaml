@@ -1,0 +1,35 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: "springboot错误日志"
+    folder: "Spring Boot"
+    interval: 1m
+    rules:
+      - uid: "spring_log_error_warn"
+        title: "服务异常日志告警"
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: "loki"
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: |
+                sum by (service_name, severity_text, exception_message, exception_type) (
+                  count_over_time({severity_text =~ "ERROR|WARN"} | exception_type =~ ".+" | telemetry_sdk_language = "java" [5m])
+                )
+              legendFormat: "{{service_name}} - {{severity_text}}"
+        
+        for: 1m
+        annotations:
+          summary: "服务 {{ $labels.service_name }} 检测到 {{ $labels.severity_text }}"
+          description: |
+            服务名称: {{ $labels.service_name }}
+            日志级别: {{ $labels.severity_text }}
+            异常类型: {{ $labels.exception_type }}
+            错误信息: {{ $labels.exception_message }}
+          
+        labels:
+          severity: "警告"
