@@ -30,7 +30,10 @@ groups:
             model:
               expr: |
                 sum by (service_name) (
-                  count_over_time(process_uptime{service_name!=""}[2m])
+                  count_over_time(process_uptime{
+                    service_name!="",
+                    telemetry_sdk_language="java"
+                  }[2m])
                 ) == bool 0
               instant: false
           - refId: C
@@ -68,6 +71,7 @@ groups:
                   sum by (service_name) (
                     rate(http_server_request_duration_count{
                       service_name!="",
+                      telemetry_sdk_language="java",
                       http_response_status_code=~"5.."
                     }[5m])
                   )
@@ -76,7 +80,8 @@ groups:
                 (
                   sum by (service_name) (
                     rate(http_server_request_duration_count{
-                      service_name!=""
+                      service_name!="",
+                      telemetry_sdk_language="java"
                     }[5m])
                   )
                 )
@@ -118,7 +123,8 @@ groups:
                   0.95,
                   sum by (service_name, le) (
                     rate(http_server_request_duration_bucket{
-                      service_name!=""
+                      service_name!="",
+                      telemetry_sdk_language="java"
                     }[5m])
                   )
                 )
@@ -166,11 +172,19 @@ groups:
             model:
               expr: |
                 sum by (service_name) (
-                  jvm_memory_used{service_name!="", area="heap"}
+                  jvm_memory_used{
+                    service_name!="",
+                    telemetry_sdk_language="java",
+                    area="heap"
+                  }
                 )
                 /
                 sum by (service_name) (
-                  jvm_memory_max{service_name!="", area="heap"}
+                  jvm_memory_max{
+                    service_name!="",
+                    telemetry_sdk_language="java",
+                    area="heap"
+                  }
                 )
               instant: false
 
