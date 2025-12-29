@@ -48,11 +48,12 @@ services:
   tempo:
     image: grafana/tempo:2.8.1
     restart: unless-stopped
-    ports:
-      - "3200:3200"
-      - "55680:55680"
-      - "55681:55681"
-      - "14250:14250"
+    expose:
+      - 3200
+      - 9411
+      - 55680
+      - 55681
+      - 14250
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
@@ -68,8 +69,8 @@ services:
     image: grafana/loki:3.5.1
     restart: unless-stopped
     command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
-    ports:
-      - "3100:3100"
+    expose:
+      - 3100
     volumes:
       - "./loki/loki.yaml:/etc/loki/loki.yaml"
     logging:
@@ -82,8 +83,8 @@ services:
     image: grafana/mimir:2.16.0
     restart: unless-stopped
     command: ["-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
-    ports:
-      - "9009:9009"
+    expose:
+      - 9009
     volumes:
       - "./mimir/mimir.yaml:/etc/mimir.yaml"
     logging:
