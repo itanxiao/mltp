@@ -18,8 +18,8 @@ groups:
         noDataState: Alerting
         execErrState: Error
         labels:
-          severity: critical
-          category: availability
+          severity: 严重
+          category: 可用性
         annotations:
           summary: "服务停止上报指标"
           description: "应用名称={{ $labels.spring_application_name }} 在 2m 内没有上报metrics"
@@ -63,8 +63,8 @@ groups:
         noDataState: OK          # <- 原来 NoData，改为 OK，NoData 不再触发通知
         execErrState: Error
         labels:
-          severity: critical
-          category: error
+          severity: 严重
+          category: 错误
         annotations:
           summary: "HTTP 5xx 错误率过高"
           description: "应用名称={{ $labels.spring_application_name }} 5xx > 5% (5m)"
@@ -112,8 +112,8 @@ groups:
         noDataState: OK
         execErrState: Error
         labels:
-          severity: warning
-          category: latency
+          severity: 警告
+          category: 延迟
         annotations:
           summary: "HTTP 延迟 p95 偏高"
           description: "应用名称={{ $labels.spring_application_name }} p95 > 500ms (10m)"
@@ -163,7 +163,7 @@ groups:
         noDataState: OK
         execErrState: Error
         labels:
-          severity: warning
+          severity: 警告
           category: jvm
         annotations:
           summary: "JVM Heap 使用率过高"
