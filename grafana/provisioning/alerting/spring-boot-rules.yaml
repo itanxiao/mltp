@@ -159,6 +159,7 @@ groups:
           summary: "JVM Heap 使用率过高"
           description: "service={{ $labels.service_name }} heap > 85% (10m)"
         data:
+          # A: 原始查询（time series）
           - refId: A
             datasourceUid: mimir
             relativeTimeRange: { from: 600, to: 0 }
@@ -172,11 +173,21 @@ groups:
                   jvm_memory_max{service_name!="", area="heap"}
                 )
               instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 service_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
           - refId: C
             datasourceUid: __expr__
             model:
               type: threshold
-              expression: A
+              expression: B
               conditions:
                 - evaluator: { type: gt, params: [0.85] }
                   reducer: { type: last }
