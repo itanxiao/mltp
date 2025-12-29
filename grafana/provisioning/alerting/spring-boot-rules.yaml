@@ -33,11 +33,21 @@ groups:
                   count_over_time(process_uptime{spring_application_name!=""}[2m])
                 ) == bool 0
               instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
           - refId: C
             datasourceUid: __expr__
             model:
               type: threshold
-              expression: A
+              expression: B
               conditions:
                 - evaluator: { type: gt, params: [0] }
                   reducer: { type: last }
