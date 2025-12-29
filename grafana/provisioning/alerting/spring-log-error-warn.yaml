@@ -11,12 +11,10 @@ groups:
         title: "服务异常日志告警"
         condition: C
 
-        noDataState: KeepLastState
-        execErrState: KeepLastState
-
-        # 防止刚触发马上恢复（尤其你 interval=20s、窗口=1m 时很容易抖）
+        noDataState: OK
+        execErrState: OK
+        
         keepFiringFor: 2m
-
         data:
           - refId: A
             datasourceUid: "loki"
