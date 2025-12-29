@@ -216,6 +216,7 @@ groups:
           # A: PromQL 查询（统计窗口内 warn+error 的新增事件数）
           - refId: A
             datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
             model:
               refId: A
               expr: |
