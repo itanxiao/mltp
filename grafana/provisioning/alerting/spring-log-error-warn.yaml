@@ -4,7 +4,7 @@ groups:
   - orgId: 1
     name: "springboot错误日志"
     folder: "Spring Boot"
-    interval: 15s     # 更快评估
+    interval: 20s     # 更快评估
 
     rules:
       - uid: "spring_log_error_warn"
