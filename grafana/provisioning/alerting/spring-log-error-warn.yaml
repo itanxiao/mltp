@@ -28,7 +28,6 @@ groups:
                     [5m]
                   )
                 )
-              # 下面这两项很多版本会需要（不写也行，但写了更稳）
               maxDataPoints: 43200
               intervalMs: 1000
 
@@ -39,6 +38,9 @@ groups:
               type: reduce
               expression: A
               reducer: last
+              # 有些版本还需要 settings
+              settings:
+                mode: dropNN
 
           - refId: C
             datasourceUid: "__expr__"
@@ -46,9 +48,17 @@ groups:
               refId: C
               type: threshold
               expression: B
-              evaluator:
-                type: gt
-                params: [0]
+              conditions:
+                - type: query
+                  query:
+                    params: [B]
+                  reducer:
+                    type: last
+                  evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
 
         for: 1m
 
