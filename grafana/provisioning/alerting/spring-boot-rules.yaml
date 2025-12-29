@@ -2,7 +2,7 @@ apiVersion: 1
 
 groups:
   - orgId: 1
-    name: spring-boot-otlp-mimir-global
+    name: spring-boot-otlp-mimir
     folder: Spring Boot
     interval: 1m
     rules:
