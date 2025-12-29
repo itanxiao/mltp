@@ -5,6 +5,7 @@ services:
   # The opentelemetry-collector batches and processes traces sent to it.
   opentelemetry-collector:
     image: otel/opentelemetry-collector-contrib
+    restart: unless-stopped
     ports:
       - "12347:12345"
       - "12348:12348"
@@ -15,10 +16,16 @@ services:
     volumes:
       - ./otel/otel.yml:/etc/otel-collector-config.yml
     command: ["--config=/etc/otel-collector-config.yml"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   # The Grafana dashboarding server.
   grafana:
     image: grafana/grafana:12.3.1
+    restart: unless-stopped
     volumes:
       - grafana:/var/lib/grafana
       - "./grafana/provisioning:/etc/grafana/provisioning"
@@ -27,11 +34,20 @@ services:
     environment:
       - GF_FEATURE_TOGGLES_ENABLE=flameGraph traceqlSearch correlations traceQLStreaming metricsSummary traceqlEditor traceToMetrics traceToProfiles datatrails
       - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_DOMAIN}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   # The Tempo service stores traces send to it by Grafana opentelemetry-collector, and takes
   # queries from Grafana to visualise those traces.
   tempo:
     image: grafana/tempo:2.8.1
+    restart: unless-stopped
     ports:
       - "3200:3200"
       - "55680:55680"
@@ -40,27 +56,66 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   # The Loki service stores logs sent to it, and takes queries from Grafana
   # to visualise those logs.
   loki:
     image: grafana/loki:3.5.1
+    restart: unless-stopped
     command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
     ports:
       - "3100:3100"
     volumes:
       - "./loki/loki.yaml:/etc/loki/loki.yaml"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   mimir:
     image: grafana/mimir:2.16.0
+    restart: unless-stopped
     command: ["-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
     ports:
       - "9009:9009"
     volumes:
       - "./mimir/mimir.yaml:/etc/mimir.yaml"
-
-  pyroscope:
-    image: grafana/pyroscope:1.13.5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+  nginx:
+    image: nginx:1.29-alpine
+    profiles:
+      - nginx
     ports:
-      - "4040:4040"
-    command: ["server"]
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-otel.conf:/etc/nginx/conf.d/nginx-otel.conf:ro
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      # Pass the environment variable to the container
+      - OTLP_DOMAIN=${OTLP_DOMAIN}
+      - GRAFANA_DOMAIN=${GRAFANA_DOMAIN}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    depends_on:
+      - grafana
+      - alloy

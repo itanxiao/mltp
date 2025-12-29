@@ -7,6 +7,7 @@ services:
   # Includes Metrics, Logs, Traces and Profiles.
   alloy:
     image: grafana/alloy:v1.9.1
+    restart: unless-stopped
     ports:
       - "12350:12350"
       - "12347:12345"
@@ -26,10 +27,15 @@ services:
       "--stability.level=public-preview",
       "/etc/alloy/config.alloy",
     ]
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
   # The Grafana dashboarding server.
   grafana:
     image: grafana/grafana:12.3.1
+    restart: unless-stopped
     volumes:
       - grafana:/var/lib/grafana
       - "./grafana/provisioning:/etc/grafana/provisioning"
@@ -40,12 +46,18 @@ services:
       - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
-
+      - GF_SERVER_ROOT_URL=${GRAFANA_DOMAIN}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
   # The Tempo service stores traces send to it by Grafana Alloy, and takes
   # queries from Grafana to visualise those traces.
   tempo:
     image: grafana/tempo:2.8.1
-    ports:
+    restart: unless-stopped
+    expose:
       - "3200:3200"
       - "9411:9411"
       - "55680:55680"
@@ -54,21 +66,68 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   # The Loki service stores logs sent to it, and takes queries from Grafana
   # to visualise those logs.
   loki:
     image: grafana/loki:3.5.1
+    restart: unless-stopped
     command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
-    ports:
+    expose:
       - "3100:3100"
     volumes:
       - "./loki/loki.yaml:/etc/loki/loki.yaml"
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
   mimir:
     image: grafana/mimir:2.16.0
+    restart: unless-stopped
     command: ["-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
-    ports:
+    expose:
       - "9009:9009"
     volumes:
       - "./mimir/mimir.yaml:/etc/mimir.yaml"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+  nginx:
+    image: nginx:1.29-alpine
+    profiles:
+      - nginx
+    ports:
+      - "80:80"
+      - "443:443"
+      # 对外只暴露 OTLP 两个端口（同域名不同端口）
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./nginx/nginx-grafana.conf:/etc/nginx/conf.d/nginx-grafana.conf:ro
+      - ./nginx/nginx-alloy.conf:/etc/nginx/conf.d/nginx-alloy.conf:ro
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      # Pass the environment variable to the container
+      - OTLP_DOMAIN=${OTLP_DOMAIN}
+      - GRAFANA_DOMAIN=${GRAFANA_DOMAIN}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    depends_on:
+      - grafana
+      - alloy
