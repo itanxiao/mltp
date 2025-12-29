@@ -10,6 +10,10 @@ groups:
         title: "服务异常日志告警"
         condition: C
 
+        # 关键：不要让 NoData 触发告警/通知
+        noDataState: OK
+        execErrState: OK
+
         data:
           - refId: A
             datasourceUid: "loki"
@@ -37,8 +41,7 @@ groups:
               refId: B
               type: reduce
               expression: A
-              reducer: last
-              # 有些版本还需要 settings
+              reducer: lastNotNull
               settings:
                 mode: dropNN
 
@@ -53,7 +56,7 @@ groups:
                   query:
                     params: [B]
                   reducer:
-                    type: last
+                    type: lastNotNull
                   evaluator:
                     type: gt
                     params: [0]
@@ -61,15 +64,3 @@ groups:
                     type: and
 
         for: 1m
-
-        annotations:
-          summary: "服务 {{ $labels.service_name }} 检测到 {{ $labels.severity_text }}（近5分钟）"
-          description: |
-            服务名称: {{ $labels.service_name }}
-            日志级别: {{ $labels.severity_text }}
-            异常类型: {{ $labels.exception_type }}
-            错误信息: {{ $labels.exception_message }}
-            计数(最近值): {{ $values.B }}
-
-        labels:
-          severity: "警告"
