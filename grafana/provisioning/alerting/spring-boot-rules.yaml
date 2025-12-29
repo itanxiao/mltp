@@ -22,7 +22,7 @@ groups:
           category: availability
         annotations:
           summary: "服务停止上报指标"
-          description: "service={{ $labels.spring_application_name }} 在 2m 内没有上报 process_uptime（OTLP push 模式下用于替代 up）"
+          description: "应用名称={{ $labels.spring_application_name }} 在 2m 内没有上报metrics"
         data:
           - refId: A
             datasourceUid: mimir
@@ -57,7 +57,7 @@ groups:
       # 2) HTTP 5xx 错误率（用 *_count 做请求计数）
       # ==================================================
       - uid: spring_http_5xx_rate_high
-        title: HTTP 5xx error rate high (OTLP/mimir)
+        title: HTTP 5xx error rate high
         condition: C
         for: 5m
         noDataState: OK          # <- 原来 NoData，改为 OK，NoData 不再触发通知
@@ -67,11 +67,11 @@ groups:
           category: error
         annotations:
           summary: "HTTP 5xx 错误率过高"
-          description: "service={{ $labels.spring_application_name }} 5xx > 5% (5m)"
+          description: "应用名称={{ $labels.spring_application_name }} 5xx > 5% (5m)"
         data:
           - refId: A
             datasourceUid: mimir
-            relativeTimeRange: { from: 600, to: 0 }
+            relativeTimeRange: { from: 300, to: 0 }
             model:
               expr: |
                 (
@@ -116,7 +116,7 @@ groups:
           category: latency
         annotations:
           summary: "HTTP 延迟 p95 偏高"
-          description: "service={{ $labels.spring_application_name }} p95 > 500ms (10m)"
+          description: "应用名称={{ $labels.spring_application_name }} p95 > 500ms (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
@@ -167,7 +167,7 @@ groups:
           category: jvm
         annotations:
           summary: "JVM Heap 使用率过高"
-          description: "service={{ $labels.spring_application_name }} heap > 85% (10m)"
+          description: "应用名称={{ $labels.spring_application_name }} heap > 85% (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
