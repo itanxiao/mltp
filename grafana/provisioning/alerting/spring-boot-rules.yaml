@@ -22,18 +22,15 @@ groups:
           category: availability
         annotations:
           summary: "服务停止上报指标"
-          description: "service={{ $labels.service_name }} 在 2m 内没有上报 process_uptime（OTLP push 模式下用于替代 up）"
+          description: "service={{ $labels.spring_application_name }} 在 2m 内没有上报 process_uptime（OTLP push 模式下用于替代 up）"
         data:
           - refId: A
             datasourceUid: mimir
             relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
-                sum by (service_name) (
-                  count_over_time(process_uptime{
-                    service_name!="",
-                    telemetry_sdk_language="java"
-                  }[2m])
+                sum by (spring_application_name) (
+                  count_over_time(process_uptime{spring_application_name!=""}[2m])
                 ) == bool 0
               instant: false
           - refId: C
@@ -60,7 +57,7 @@ groups:
           category: error
         annotations:
           summary: "HTTP 5xx 错误率过高"
-          description: "service={{ $labels.service_name }} 5xx > 5% (5m)"
+          description: "service={{ $labels.spring_application_name }} 5xx > 5% (5m)"
         data:
           - refId: A
             datasourceUid: mimir
@@ -68,20 +65,18 @@ groups:
             model:
               expr: |
                 (
-                  sum by (service_name) (
+                  sum by (spring_application_name) (
                     rate(http_server_request_duration_count{
-                      service_name!="",
-                      telemetry_sdk_language="java",
+                      spring_application_name!="",
                       http_response_status_code=~"5.."
                     }[5m])
                   )
                 )
                 /
                 (
-                  sum by (service_name) (
+                  sum by (spring_application_name) (
                     rate(http_server_request_duration_count{
-                      service_name!="",
-                      telemetry_sdk_language="java"
+                      spring_application_name!=""
                     }[5m])
                   )
                 )
@@ -111,7 +106,7 @@ groups:
           category: latency
         annotations:
           summary: "HTTP 延迟 p95 偏高"
-          description: "service={{ $labels.service_name }} p95 > 500ms (10m)"
+          description: "service={{ $labels.spring_application_name }} p95 > 500ms (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
@@ -121,16 +116,15 @@ groups:
               expr: |
                 histogram_quantile(
                   0.95,
-                  sum by (service_name, le) (
+                  sum by (spring_application_name, le) (
                     rate(http_server_request_duration_bucket{
-                      service_name!="",
-                      telemetry_sdk_language="java"
+                      spring_application_name!=""
                     }[5m])
                   )
                 )
               instant: false
 
-          # B: Reduce，把 time series 变成单值（每个 service_name 一条单值）
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
           - refId: B
             datasourceUid: __expr__
             model:
@@ -163,7 +157,7 @@ groups:
           category: jvm
         annotations:
           summary: "JVM Heap 使用率过高"
-          description: "service={{ $labels.service_name }} heap > 85% (10m)"
+          description: "service={{ $labels.spring_application_name }} heap > 85% (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
@@ -171,24 +165,16 @@ groups:
             relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
-                sum by (service_name) (
-                  jvm_memory_used{
-                    service_name!="",
-                    telemetry_sdk_language="java",
-                    area="heap"
-                  }
+                sum by (spring_application_name) (
+                  jvm_memory_used{spring_application_name!="", area="heap"}
                 )
                 /
-                sum by (service_name) (
-                  jvm_memory_max{
-                    service_name!="",
-                    telemetry_sdk_language="java",
-                    area="heap"
-                  }
+                sum by (spring_application_name) (
+                  jvm_memory_max{spring_application_name!="", area="heap"}
                 )
               instant: false
 
-          # B: Reduce，把 time series 变成单值（每个 service_name 一条单值）
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
           - refId: B
             datasourceUid: __expr__
             model:
