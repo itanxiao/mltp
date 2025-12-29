@@ -198,3 +198,60 @@ groups:
                 - evaluator: { type: gt, params: [0.85] }
                   reducer: { type: last }
                   operator: { type: and }
+      - uid: logback_warn_error_high
+        title: "WARN+ERROR 日志突增"
+        condition: C
+        for: 2m
+
+        labels:
+          severity: 警告
+
+        annotations:
+          summary: "WARN+ERROR 在指定窗口内超过阈值"
+          description: |
+            在最近 5分钟内 WARN+ERROR 新增超过阈值。
+            当前值: {{ $values.B }} (events)
+
+        data:
+          # A: PromQL 查询（统计窗口内 warn+error 的新增事件数）
+          - refId: A
+            datasourceUid: mimir
+            model:
+              refId: A
+              expr: |
+                sum by (spring_application_name) (
+                  increase(
+                    logback_events{
+                      level=~"warn|error"
+                    }[5m]
+                  )
+                )
+              intervalMs: 60000
+              maxDataPoints: 43200
+
+          # B: Reduce（把 A 变成单值，用 last 即可）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold（阈值判断）
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 1                      # 阈值：最近 5m 内 warn+error 新增 > 50 就告警
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+                  type: query
