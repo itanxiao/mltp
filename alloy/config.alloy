@@ -64,6 +64,12 @@ otelcol.receiver.otlp "otlp" {
   }
 }
 
+// 添加一个专门用于打印日志内容的组件
+otelcol.exporter.logging "debug_logs" {
+  verbosity           = "detailed" // 详细模式，可以看到具体的数据体
+  sampling_initial    = 1          // 打印每一条，不进行采样
+  sampling_thereafter = 1
+}
 ///////////////////////////////////////////////////////////////////////////////
 // Batch processor: common processing for all signals
 otelcol.processor.batch "default" {
@@ -96,11 +102,4 @@ otelcol.exporter.prometheus "otlp_metrics" {
   add_metric_suffixes = false
 
   forward_to = [prometheus.remote_write.mimir.receiver]
-}
-
-// 添加一个专门用于打印日志内容的组件
-otelcol.exporter.logging "debug_logs" {
-  verbosity           = "detailed" // 详细模式，可以看到具体的数据体
-  sampling_initial    = 1          // 打印每一条，不进行采样
-  sampling_thereafter = 1
 }
