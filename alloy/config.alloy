@@ -21,18 +21,7 @@ prometheus.remote_write "mimir" {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Loki write (for logs)
-//loki.write "default" {
-//  endpoint {
-//    json_path(local.file.endpoints.content, ".logs.url")[0]
 
-    // basic_auth {
-    //  username = json_path(local.file.endpoints.content, ".logs.basicAuth.username")[0]
-    //  password = json_path(local.file.endpoints.content, ".logs.basicAuth.password")[0]
-    // }
-//  }
-//}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tempo exporter auth + exporter (for traces)
@@ -90,15 +79,9 @@ otelcol.processor.batch "default" {
     metrics = [otelcol.exporter.prometheus.otlp_metrics.input]
 
     // logs -> loki exporter
-    logs = [otelcol.exporter.otlphttp.loki.input]
+    logs = [otelcol.exporter.otlphttp.loki.input，otelcol.exporter.logging.debug_logs.input]
   }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// OTLP logs -> Loki
-//otelcol.exporter.loki "default" {
-//  forward_to = [loki.write.default.receiver]
-//}
 
 otelcol.exporter.otlphttp "loki" {
   client {
@@ -113,4 +96,11 @@ otelcol.exporter.prometheus "otlp_metrics" {
   add_metric_suffixes = false
 
   forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// 添加一个专门用于打印日志内容的组件
+otelcol.exporter.logging "debug_logs" {
+  verbosity           = "detailed" // 详细模式，可以看到具体的数据体
+  sampling_initial    = 1          // 打印每一条，不进行采样
+  sampling_thereafter = 1
 }
