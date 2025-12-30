@@ -119,7 +119,7 @@ services:
     environment:
       # Pass the environment variable to the container
       - OTLP_DOMAIN=${OTLP_DOMAIN}
-      - GRAFANA_DOMAIN=${GF_SERVER_DOMAIN}
+      - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
       interval: 10s
@@ -127,10 +127,10 @@ services:
       retries: 6
     command: >
       /bin/sh -c "
-      envsubst '\$OTLP_DOMAIN \$GRAFANA_DOMAIN' \
+      envsubst '\$GF_SERVER_DOMAIN \$GF_SERVER_DOMAIN' \
         < /etc/nginx/templates/nginx-grafana.conf.template \
         > /etc/nginx/conf.d/nginx-grafana.conf &&
-      envsubst '\$OTLP_DOMAIN \$GRAFANA_DOMAIN' \
+      envsubst '\$OTLP_DOMAIN \$OTLP_DOMAIN' \
         < /etc/nginx/templates/nginx-alloy.conf.template \
         > /etc/nginx/conf.d/nginx-alloy.conf &&
       nginx -g 'daemon off;'
