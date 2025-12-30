@@ -202,17 +202,18 @@ groups:
         title: "WARN+ERROR 日志突增"
         condition: C
         for: 2m
+        noDataState: OK
+        keepFiringFor: 5m
 
         labels:
           severity: 警告
 
         annotations:
           description: |
-            在最近 5分钟内 WARN+ERROR 新增超过阈值。
+            在最近 5 分钟内 WARN+ERROR 新增超过阈值。
             当前值: {{ $values.B }} (events)
 
         data:
-          # A: PromQL 查询（统计窗口内 warn+error 的新增事件数）
           - refId: A
             datasourceUid: mimir
             relativeTimeRange: { from: 600, to: 0 }
@@ -229,7 +230,6 @@ groups:
               intervalMs: 60000
               maxDataPoints: 43200
 
-          # B: Reduce（把 A 变成单值，用 last 即可）
           - refId: B
             datasourceUid: __expr__
             model:
@@ -238,7 +238,6 @@ groups:
               expression: A
               reducer: last
 
-          # C: Threshold（阈值判断）
           - refId: C
             datasourceUid: __expr__
             model:
@@ -249,7 +248,7 @@ groups:
                 - evaluator:
                     type: gt
                     params:
-                      - 1                      # 阈值：最近 5m 内 warn+error 新增 > 50 就告警
+                      - 1
                   operator:
                     type: and
                   reducer:
