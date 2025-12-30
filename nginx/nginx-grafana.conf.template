@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name ${GRAFANA_DOMAIN};
+    server_name ${GF_SERVER_DOMAIN};
 
     # OTLP HTTP
     location / {

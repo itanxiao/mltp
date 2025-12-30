@@ -105,8 +105,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx-otel.conf:/etc/nginx/conf.d/nginx-otel.conf:ro
-      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-grafana.conf.template:/etc/nginx/templates/nginx-grafana.conf.template:ro
+      - ./nginx/nginx-otel.conf.template:/etc/nginx/templates/nginx-otel.conf.template:ro
       - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
     environment:
       # Pass the environment variable to the container
