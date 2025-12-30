@@ -113,8 +113,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx-grafana.conf.template:/etc/nginx/conf.d/nginx-grafana.conf.template:ro
-      - ./nginx/nginx-alloy.conf.template:/etc/nginx/conf.d/nginx-alloy.conf.template:ro
+      - ./nginx/nginx-grafana.conf.template:/etc/nginx/templates/nginx-grafana.conf.template:ro
+      - ./nginx/nginx-alloy.conf.template:/etc/nginx/templates/nginx-alloy.conf.template:ro
       - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
     environment:
       # Pass the environment variable to the container
