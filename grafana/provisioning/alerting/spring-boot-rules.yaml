@@ -248,7 +248,7 @@ groups:
                 - evaluator:
                     type: gt
                     params:
-                      - 1
+                      - 50
                   operator:
                     type: and
                   reducer:
