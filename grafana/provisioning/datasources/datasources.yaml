@@ -9,7 +9,8 @@ datasources:
     jsonData:
       derivedFields:
         - datasourceUid: tempo
-          matcherRegex: "^.*?traceI[d|D]=(\\w+).*$"
+          # 兼容：trace_id=xxx、traceId=xxx、"trace_id":"xxx"
+          matcherRegex: '.*(?:trace[_]?id)["=:\s]*"?([0-9a-fA-F]{16,32})"?.*'
           name: traceId
           url: '$${__value.raw}'
 
@@ -25,7 +26,7 @@ datasources:
         datasourceUid: 'Mimir'
       tracesToLogs:
         datasourceUid: loki
-        filterByTraceID: false
+        filterByTraceID: true
         spanEndTimeShift: "500ms"
         spanStartTimeShift: "-500ms"
         tags: ['beast']
@@ -38,6 +39,6 @@ datasources:
     jsonData:
       exemplarTraceIdDestinations:
         - datasourceUid: tempo
-          name: traceID
+          name: trace_id
       httpMethod: POST
       timeInterval: "2s"
