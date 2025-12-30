@@ -1,0 +1,67 @@
+# apiVersion: 1
+
+# groups:
+#   - orgId: 1
+#     name: "springboot错误日志"
+#     folder: "Spring Boot"
+#     interval: 20s     
+
+#     rules:
+#       - uid: "spring_log_error"
+#         title: "服务异常日志告警"
+#         condition: C
+
+#         noDataState: OK
+#         execErrState: OK
+        
+#         keepFiringFor: 5m
+#         data:
+#           - refId: A
+#             datasourceUid: "loki"
+#             relativeTimeRange:
+#               from: 120     # 只看近2分钟
+#               to: 0
+#             model:
+#               refId: A
+#               editorMode: code
+#               queryType: range
+#               expr: |
+#                 sum by (service_name, severity_text, exception_message, exception_type) (
+#                   count_over_time(
+#                     {severity_text=~"ERROR"}
+#                     | exception_type=~".+"
+#                     [2m]
+#                   )
+#                 )
+#               maxDataPoints: 43200
+#               intervalMs: 1000
+
+#           - refId: B
+#             datasourceUid: "__expr__"
+#             model:
+#               refId: B
+#               type: reduce
+#               expression: A
+#               reducer: max        
+#               settings:
+#                 mode: dropNN
+
+#           - refId: C
+#             datasourceUid: "__expr__"
+#             model:
+#               refId: C
+#               type: threshold
+#               expression: B
+#               conditions:
+#                 - type: query
+#                   query:
+#                     params: [B]
+#                   reducer:
+#                     type: lastNotNull
+#                   evaluator:
+#                     type: gt
+#                     params: [0]
+#                   operator:
+#                     type: and
+
+#         for: 0s

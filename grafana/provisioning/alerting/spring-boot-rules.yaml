@@ -1,0 +1,256 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: spring-boot-otlp-mimir
+    folder: Spring Boot
+    interval: 1m
+    rules:
+
+      # ==================================================
+      # 1) 服务停止上报（OTLP push 模式替代 up）
+      # 逻辑：在最近 2 分钟内，process_uptime 没有任何样本 -> 认为服务/链路不可用
+      # ==================================================
+      - uid: spring_service_no_metrics
+        title: Spring Boot 服务停止发送指标
+        condition: C
+        for: 2m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: 严重
+          category: 可用性
+        annotations:
+          description: "应用名称={{ $labels.spring_application_name }} 在 2m 内没有上报metrics"
+        data:
+          - refId: A
+            datasourceUid: mimir
+            relativeTimeRange: { from: 120, to: 0 }
+            model:
+              expr: |
+                sum by (spring_application_name) (
+                  count_over_time(process_uptime{spring_application_name!=""}[2m])
+                ) == bool 0
+              instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 2) HTTP 5xx 错误率（用 *_count 做请求计数）
+      # ==================================================
+      - uid: spring_http_5xx_rate_high
+        title: HTTP 5xx 错误率过高
+        condition: C
+        for: 5m
+        noDataState: OK          # <- 原来 NoData，改为 OK，NoData 不再触发通知
+        execErrState: Error
+        labels:
+          severity: 严重
+          category: 错误
+        annotations:
+          description: "应用名称={{ $labels.spring_application_name }} 5xx > 5% (5m)"
+        data:
+          - refId: A
+            datasourceUid: mimir
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              expr: |
+                (
+                  sum by (spring_application_name) (
+                    rate(http_server_request_duration_count{
+                      spring_application_name!="",
+                      http_response_status_code=~"5.."
+                    }[5m])
+                  )
+                )
+                /
+                (
+                  sum by (spring_application_name) (
+                    rate(http_server_request_duration_count{
+                      spring_application_name!=""
+                    }[5m])
+                  )
+                )
+              instant: false
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 3) HTTP p95 延迟（毫秒单位）
+      # 需要 http_server_request_duration_bucket（如果你没 bucket，我可以给你改成平均延迟告警）
+      # ==================================================
+      - uid: spring_http_latency_p95_high
+        title: HTTP 延迟 p95 偏高
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: 警告
+          category: 延迟
+        annotations:
+          description: "应用名称={{ $labels.spring_application_name }} p95 > 500ms (10m)"
+        data:
+          # A: 原始查询（time series）
+          - refId: A
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              expr: |
+                histogram_quantile(
+                  0.95,
+                  sum by (spring_application_name, le) (
+                    rate(http_server_request_duration_bucket{
+                      spring_application_name!=""
+                    }[5m])
+                  )
+                )
+              instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [500] }
+                  reducer: { type: last }
+                  operator: { type: and }
+
+      # ==================================================
+      # 4) JVM Heap 使用率 > 85%
+      # ==================================================
+      - uid: spring_jvm_heap_high
+        title: JVM Heap 使用率过高
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: 警告
+          category: jvm
+        annotations:
+          description: "应用名称={{ $labels.spring_application_name }} heap > 85% (10m)"
+        data:
+          # A: 原始查询（time series）
+          - refId: A
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              expr: |
+                sum by (spring_application_name) (
+                  jvm_memory_used{spring_application_name!="", area="heap"}
+                )
+                /
+                sum by (spring_application_name) (
+                  jvm_memory_max{spring_application_name!="", area="heap"}
+                )
+              instant: false
+
+          # B: Reduce，把 time series 变成单值（每个 spring_application_name 一条单值）
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对单值做告警判断
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.85] }
+                  reducer: { type: last }
+                  operator: { type: and }
+      - uid: logback_warn_error_high
+        title: "WARN+ERROR 日志突增"
+        condition: C
+        for: 10s
+        noDataState: OK
+        keepFiringFor: 5m
+
+        labels:
+          severity: 警告
+
+        annotations:
+          description: |
+            在最近 5 分钟内 WARN+ERROR 新增超过阈值。
+            当前值: {{ $values.B }} (events)
+
+        data:
+          - refId: A
+            datasourceUid: mimir
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              expr: |
+                sum by (spring_application_name) (
+                  increase(
+                    logback_events{
+                      level=~"warn|error"
+                    }[5m]
+                  )
+                )
+              intervalMs: 60000
+              maxDataPoints: 43200
+
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 50
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+                  type: query

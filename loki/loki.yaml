@@ -10,7 +10,12 @@ server:
 # overrides block). In this case, volume usage is be enabled globally (as there is one tenant).
 # This is used by the Logs Explorer app in Grafana.
 limits_config:
+  retention_period: 30d 
+  metric_aggregation_enabled: true
   volume_enabled: true
+  allow_structured_metadata: true
+  otlp_config:
+    severity_text_as_label: true
 
 # The common block is used to set options for all of the components that make up Loki. These can be overridden using
 # the specific configuration blocks for each component.
