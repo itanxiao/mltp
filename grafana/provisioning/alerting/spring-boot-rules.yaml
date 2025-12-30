@@ -201,7 +201,7 @@ groups:
       - uid: logback_warn_error_high
         title: "WARN+ERROR 日志突增"
         condition: C
-        for: 2m
+        for: 10s
         noDataState: OK
         keepFiringFor: 5m
 
