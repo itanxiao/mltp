@@ -48,6 +48,7 @@ services:
     environment:
       - GF_FEATURE_TOGGLES_ENABLE=flameGraph traceqlSearch traceQLStreaming correlations metricsSummary traceqlEditor traceToMetrics traceToProfiles datatrails
       - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app
+      - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
     logging:
       driver: "json-file"
       options:
@@ -111,9 +112,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      # 对外只暴露 OTLP 两个端口（同域名不同端口）
-      - "4317:4317"
-      - "4318:4318"
     volumes:
       - ./nginx/nginx-grafana.conf:/etc/nginx/conf.d/nginx-grafana.conf:ro
       - ./nginx/nginx-alloy.conf:/etc/nginx/conf.d/nginx-alloy.conf:ro
