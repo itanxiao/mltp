@@ -1,0 +1,48 @@
+services:
+  # The opentelemetry-collector batches and processes traces sent to it.
+  opentelemetry-collector:
+    image: otel/opentelemetry-collector-contrib
+    restart: unless-stopped
+    ports:
+      - "12347:12345"
+      - "12348:12348"
+      - "6832:6832"
+      - "55679:55679"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./otel/otel.yml:/etc/otel-collector-config.yml
+    command: ["--config=/etc/otel-collector-config.yml"]
+    environment:
+      - OTELCOL_AUTH_BEARER_CREDS_TOKEN=${OTELCOL_AUTH_BEARER_CREDS_TOKEN}    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+  nginx:
+    image: nginx:1.29-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-grafana.conf.template:/etc/nginx/templates/nginx-grafana.conf.template:ro
+      - ./nginx/nginx-otel.conf.template:/etc/nginx/templates/nginx-otel.conf.template:ro
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      # Pass the environment variable to the container
+      - OTLP_DOMAIN=${OTLP_DOMAIN}
+      - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    depends_on:
+      - grafana
+      - opentelemetry-collector

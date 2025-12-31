@@ -5,36 +5,6 @@ volumes:
   tempo:
   loki:
 services:
-  # Grafana Alloy batches and processes traces sent to it, generating
-  # auto-logs from those traces.
-  # Includes Metrics, Logs, Traces and Profiles.
-  alloy:
-    image: grafana/alloy:v1.12.1
-    restart: unless-stopped
-    ports:
-      - "12350:12350"
-      - "12347:12345"
-      - "12348:12348"
-      - "6832:6832"
-      - "55679:55679"
-      - "4317:4317"
-      - "4318:4318"
-    environment:
-      - OTELCOL_AUTH_BEARER_CREDS_TOKEN=${OTELCOL_AUTH_BEARER_CREDS_TOKEN}  
-    volumes:
-      - "./alloy/config.alloy:/etc/alloy/config.alloy"
-      - "./alloy/endpoints.json:/etc/alloy/endpoints.json"
-    command: [
-      "run",
-      "--server.http.listen-addr=0.0.0.0:12345",
-      "--stability.level=experimental",
-      "/etc/alloy/config.alloy",
-    ]
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "3"
   # The Grafana dashboarding server.
   grafana:
     image: grafana/grafana:12.3.1
@@ -107,18 +77,13 @@ services:
         max-file: "3"
   nginx:
     image: nginx:1.29-alpine
-    profiles:
-      - nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx-grafana.conf.template:/etc/nginx/templates/nginx-grafana.conf.template:ro
-      - ./nginx/nginx-alloy.conf.template:/etc/nginx/templates/nginx-alloy.conf.template:ro
       - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
     environment:
-      # Pass the environment variable to the container
-      - OTLP_DOMAIN=${OTLP_DOMAIN}
       - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
@@ -132,4 +97,3 @@ services:
         max-file: "3"
     depends_on:
       - grafana
-      - alloy
