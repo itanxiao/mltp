@@ -1,3 +1,4 @@
+name: grafana-mltp
 services:
   # Grafana Alloy batches and processes traces sent to it, generating
   # auto-logs from those traces.

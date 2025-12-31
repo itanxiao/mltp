@@ -1,3 +1,4 @@
+name: grafana-mltp
 services:
   # The opentelemetry-collector batches and processes traces sent to it.
   opentelemetry-collector:
