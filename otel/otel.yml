@@ -22,8 +22,7 @@ processors:
     log_statements:
       - context: log
         statements:
-          - ReplacePattern(body, "=", "＝")
-            where IsString(body)
+           - replace_pattern(body, "=", "＝") where IsString(body)
   batch:
     send_batch_size: 1000
     send_batch_max_size: 2000
