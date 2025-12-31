@@ -26,8 +26,6 @@ exporters:
   # traces -> Tempo（OTLP/gRPC）
   otlp/tempo:
     endpoint: "http://tempo:4317"
-    auth:
-      authenticator: bearertokenauth/tempo_basic
     tls:
       insecure: true
       insecure_skip_verify: true
@@ -43,8 +41,6 @@ exporters:
 service:
   extensions:
     - bearertokenauth/ingest
-    - bearertokenauth/tempo_basic
-    - basicauth/mimir
 
   pipelines:
     traces:
