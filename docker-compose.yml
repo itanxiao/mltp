@@ -86,10 +86,11 @@ services:
     environment:
       - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1 || exit 1"]
       interval: 10s
       timeout: 3s
-      retries: 6
+      retries: 3
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
