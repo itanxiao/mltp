@@ -22,8 +22,8 @@ processors:
     log_statements:
       - context: log
         statements:
-          # 把正文里所有 "=" 改成 "＝"
-          - set(body, replace_pattern(body, "=", "＝"))
+          # 把正文里所有 "=" 改成 "＝"，破坏 key=value 形态，让 logfmt 探测失效
+          - replace_pattern(body, "=", "＝")
             where IsString(body)
   batch:
     send_batch_size: 1000
