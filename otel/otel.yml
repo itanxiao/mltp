@@ -17,6 +17,14 @@ receivers:
           authenticator: bearertokenauth/ingest
 
 processors:
+  transform/nologfmt:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          # 把正文里所有 "=" 改成 "＝"
+          - set(body, replace_pattern(body, "=", "＝"))
+            where IsString(body)
   batch:
     send_batch_size: 1000
     send_batch_max_size: 2000
@@ -55,5 +63,5 @@ service:
 
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [transform/nologfmt,batch]
       exporters: [otlphttp/loki]
