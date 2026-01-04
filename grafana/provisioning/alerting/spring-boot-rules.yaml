@@ -21,15 +21,15 @@ groups:
           severity: 严重
           category: 可用性
         annotations:
-          description: "应用名称={{ $labels.spring_application_name }} 在 2m 内没有上报metrics"
+          description: "应用名称={{ $labels.spring_application_name }},环境={{  $labels.deployment_environment_name }} 在 2m 内没有上报metrics"
         data:
           - refId: A
             datasourceUid: mimir
             relativeTimeRange: { from: 120, to: 0 }
             model:
               expr: |
-                sum by (spring_application_name) (
-                  count_over_time(process_uptime{spring_application_name!=""}[2m])
+                sum by (spring_application_name, deployment_environment_name) (
+                  count_over_time(process_uptime_milliseconds{spring_application_name!=""}[2m])
                 ) == bool 0
               instant: false
 
@@ -65,7 +65,7 @@ groups:
           severity: 严重
           category: 错误
         annotations:
-          description: "应用名称={{ $labels.spring_application_name }} 5xx > 5% (5m)"
+          description: "应用名称={{ $labels.spring_application_name }},环境={{  $labels.deployment_environment_name }} 5xx > 5% (5m)"
         data:
           - refId: A
             datasourceUid: mimir
@@ -73,8 +73,8 @@ groups:
             model:
               expr: |
                 (
-                  sum by (spring_application_name) (
-                    rate(http_server_request_duration_count{
+                  sum by (spring_application_name, deployment_environment_name) (
+                    rate(http_server_request_duration_milliseconds_count{
                       spring_application_name!="",
                       http_response_status_code=~"5.."
                     }[5m])
@@ -82,8 +82,8 @@ groups:
                 )
                 /
                 (
-                  sum by (spring_application_name) (
-                    rate(http_server_request_duration_count{
+                  sum by (spring_application_name, deployment_environment_name) (
+                    rate(http_server_request_duration_milliseconds_count{
                       spring_application_name!=""
                     }[5m])
                   )
@@ -113,7 +113,7 @@ groups:
           severity: 警告
           category: 延迟
         annotations:
-          description: "应用名称={{ $labels.spring_application_name }} p95 > 500ms (10m)"
+          description: "应用名称={{ $labels.spring_application_name }},环境={{  $labels.deployment_environment_name }} p95 > 500ms (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
@@ -123,8 +123,8 @@ groups:
               expr: |
                 histogram_quantile(
                   0.95,
-                  sum by (spring_application_name, le) (
-                    rate(http_server_request_duration_bucket{
+                  sum by (spring_application_name, deployment_environment_name, le) (
+                    rate(http_server_request_duration_milliseconds_bucket{
                       spring_application_name!=""
                     }[5m])
                   )
@@ -163,7 +163,7 @@ groups:
           severity: 警告
           category: jvm
         annotations:
-          description: "应用名称={{ $labels.spring_application_name }} heap > 85% (10m)"
+          description: "应用名称={{ $labels.spring_application_name }},环境={{  $labels.deployment_environment_name }} heap > 85% (10m)"
         data:
           # A: 原始查询（time series）
           - refId: A
@@ -171,12 +171,12 @@ groups:
             relativeTimeRange: { from: 600, to: 0 }
             model:
               expr: |
-                sum by (spring_application_name) (
-                  jvm_memory_used{spring_application_name!="", area="heap"}
+                sum by (spring_application_name, deployment_environment_name) (
+                  jvm_memory_used_bytes{spring_application_name!="", area="heap"}
                 )
                 /
-                sum by (spring_application_name) (
-                  jvm_memory_max{spring_application_name!="", area="heap"}
+                sum by (spring_application_name, deployment_environment_name) (
+                  jvm_memory_max_bytes{spring_application_name!="", area="heap"}
                 )
               instant: false
 
@@ -210,9 +210,8 @@ groups:
 
         annotations:
           description: |
-            在最近 5 分钟内 WARN+ERROR 新增超过阈值。
+            应用名称={{ $labels.spring_application_name }},环境={{  $labels.deployment_environment_name }} 在最近 5 分钟内 WARN+ERROR 新增超过阈值。
             当前值: {{ $values.B }} (events)
-
         data:
           - refId: A
             datasourceUid: mimir
@@ -220,9 +219,9 @@ groups:
             model:
               refId: A
               expr: |
-                sum by (spring_application_name) (
+                sum by (spring_application_name, deployment_environment_name) (
                   increase(
-                    logback_events{
+                    logback_events_total{
                       level=~"warn|error"
                     }[5m]
                   )
