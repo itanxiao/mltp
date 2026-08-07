@@ -89,11 +89,21 @@ groups:
                   )
                 )
               instant: false
+
+          # B: Reduce，将每条 time series 规约为单值后才能用于告警判断
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+
+          # C: Threshold，对规约后的单值判断 5xx 错误率是否超过 5%
           - refId: C
             datasourceUid: __expr__
             model:
               type: threshold
-              expression: A
+              expression: B
               conditions:
                 - evaluator: { type: gt, params: [0.05] }
                   reducer: { type: last }
