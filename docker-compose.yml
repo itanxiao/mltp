@@ -7,7 +7,7 @@ volumes:
 services:
   # The Grafana dashboarding server.
   grafana:
-    image: grafana/grafana:12.3.1
+    image: grafana/grafana:13.0.2
     restart: unless-stopped
     volumes:
       - grafana:/var/lib/grafana
@@ -27,7 +27,7 @@ services:
   # The Tempo service stores traces send to it by Grafana Alloy, and takes
   # queries from Grafana to visualise those traces.
   tempo:
-    image: grafana/tempo:2.8.1
+    image: grafana/tempo:3.0.2
     restart: unless-stopped
     expose:
       - 3200
@@ -35,7 +35,7 @@ services:
       - 55680
       - 55681
       - 14250
-    command: [ "-config.file=/etc/tempo.yaml" ]
+    command: [ "-target=all", "-config.file=/etc/tempo.yaml" ]
     volumes:
       - tempo:/var/tempo
       - "./tempo/tempo.yaml:/etc/tempo.yaml"
@@ -48,7 +48,7 @@ services:
   # The Loki service stores logs sent to it, and takes queries from Grafana
   # to visualise those logs.
   loki:
-    image: grafana/loki:3.5.1
+    image: grafana/loki:3.7.2
     restart: unless-stopped
     command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
     expose:
@@ -62,9 +62,9 @@ services:
         max-size: "50m"
         max-file: "3"
   mimir:
-    image: grafana/mimir:2.16.0
+    image: grafana/mimir:3.1.0
     restart: unless-stopped
-    command: ["-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
+    command: ["-target=all", "-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
     expose:
       - 9009
     volumes:
